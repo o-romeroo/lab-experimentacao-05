@@ -80,11 +80,12 @@ Possíveis extensões:
    - Tags: id, name.
    - Dados sintéticos gerados por script `data/seed.js` garantindo distribuição razoável (por exemplo, comprimento de textos variado para aumentar realismo do payload).
 2. Endpoints REST:
+3. 
 | Objetivo | Método | Endpoint Base | Exemplo / Observações |
 |----------|--------|---------------|-----------------------|
 | Buscar repositórios Java populares | GET | `https://api.github.com/search/repositories` | `?q=language:Java+stars:>0&sort=stars&order=desc&per_page=100&page={n}` |
-| Detalhes de repositório | GET | `https://api.github.com/repos/{owner}/{repo}` | Campos usados: `stargazers_count`, `created_at`, etc. |
-| Releases (paginação completa) | GET | `https://api.github.com/repos/{owner}/{repo}/releases` | Paginação: `?page={n}&per_page=100` até lista vazia |
+| Detalhes de repositório | GET | `https://api.github.com/repos/{owner}/{repo}` | Campos usados: `stargazers_count`, `created_at` |
+| Releases (paginação completa) | GET | `https://api.github.com/repos/{owner}/{repo}/releases` | Paginação: `?page={n}&per_page=100` |
 
 Cabeçalhos:
 ```
