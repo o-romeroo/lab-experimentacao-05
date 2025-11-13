@@ -28,7 +28,7 @@ Nota: Como não garantimos a direção a priori para latência (pode depender da
 
 ---
 
-## C. Variáveis Independentes
+## B. Variáveis Independentes
 
 1. Tipo de API (Fator Principal): REST vs GraphQL.
 2. Tipo de Consulta (Cenário):
@@ -48,7 +48,7 @@ Nota: Como não garantimos a direção a priori para latência (pode depender da
 
 ---
 
-## D. Tratamentos
+## C. Tratamentos
 
 Cada tratamento é a combinação dos níveis dos fatores relevantes. Para não gerar explosão combinatória, aplicaremos um delineamento fatorial parcial (selecionando combinações representativas):
 
@@ -70,7 +70,7 @@ Possíveis extensões:
 
 ---
 
-## E. Objetos Experimentais
+## D. Objetos Experimentais
 
 1. Conjunto de Dados:
    - Estruturas: Users, Posts, Tags (ou Categories).
@@ -105,7 +105,7 @@ Tratamento de erros:
 
 ---
 
-## F. Tipo de Projeto Experimental
+## E. Tipo de Projeto Experimental
 
 - Delineamento Intra-Sujeitos (paired design): Para cada tipo de consulta, medimos ambos os tratamentos (REST vs GraphQL) em condições idênticas.
 - Estratégia de Bloqueio:
@@ -117,7 +117,7 @@ Tratamento de erros:
 
 ---
 
-## G. Quantidade de Medições
+## F. Quantidade de Medições
 
 ### Por Tratamento (Exemplo Base)
 - Warmup: Descartar primeiros 50–100 requests (dependendo da duração) para estabilizar JIT e caches.
@@ -134,7 +134,7 @@ Tratamento de erros:
 
 ---
 
-## 11. Ameaças à Validade
+## G. Ameaças à Validade
 
 | Tipo | Ameaça | Mitigação |
 |------|--------|-----------|
