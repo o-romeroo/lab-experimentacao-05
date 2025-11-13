@@ -24,7 +24,7 @@ Nota: Como não garantimos a direção a priori para latência (pode depender da
 3. Percentis de latência: p50, p90, p95, p99.
 4. Tamanho do Payload (bytes): comprimento do corpo de resposta (antes de compressão).
 5. Eficiência de Seleção (ratio): número de campos retornados / número de campos potencialmente disponíveis (para evidenciar redução de over-fetch no GraphQL).
-6. Throughput (req/s) sob cenários de carga (apenas para contexto interpretativo, não é variável primária para hipóteses).
+6. Throughput (request/seg) sob cenários de carga (apenas para contexto interpretativo, não é variável primária para hipóteses).
 
 ---
 
@@ -37,15 +37,14 @@ Nota: Como não garantimos a direção a priori para latência (pode depender da
    - Over-fetch (REST retorna todos os campos; GraphQL solicita subconjunto).
    - Deep nesting (User → Posts → Tags ou similar).
 3. Tamanho do Dataset:
-   - Pequeno (ex: 100 usuários / 300 posts).
-   - Médio (5.000 usuários / 15.000 posts).
-   - Grande (50.000 usuários / 150.000 posts) — se viável sem degradar o ambiente.
+   - Pequeno (100 repos)
+   - Médio (300 repos)
+   - Grande (1.000 repos)
 4. Nível de Concorrência:
-   - 1 VU (sequencial).
-   - 10 VUs (moderado).
-   - 50 VUs (alto).
-   - 100 VUs (stress leve) — opcional dependendo de capacidade.
-5. Subconjunto de Campos Solicitados (somente para GraphQL): completo vs reduzido (controla magnitude da economia de payload).
+   - 1 token (sequencial)
+   - 3 tokens (moderado)
+   - 5 tokens (alto)
+5. Subconjunto de Campos Solicitados (somente para GraphQL): completo vs reduzido (controla magnitude da economia de payload)
 
 ---
 
