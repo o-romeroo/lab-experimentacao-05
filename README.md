@@ -80,20 +80,29 @@ Possíveis extensões:
    - Tags: id, name.
    - Dados sintéticos gerados por script `data/seed.js` garantindo distribuição razoável (por exemplo, comprimento de textos variado para aumentar realismo do payload).
 2. Endpoints REST:
-   - GET /users/:id
-   - GET /users/:id/posts
-   - GET /posts/:id
-   - GET /posts/:id/tags
-   - (Possível agregação: /users/:id/with-posts para evitar múltiplas requisições — mas manter endpoints atômicos para refletir estilo REST típico.)
+| Objetivo | Método | Endpoint Base | Exemplo / Observações |
+|----------|--------|---------------|-----------------------|
+| Buscar repositórios Java populares | GET | `https://api.github.com/search/repositories` | `?q=language:Java+stars:>0&sort=stars&order=desc&per_page=100&page={n}` |
+| Detalhes de repositório | GET | `https://api.github.com/repos/{owner}/{repo}` | Campos usados: `stargazers_count`, `created_at`, etc. |
+| Releases (paginação completa) | GET | `https://api.github.com/repos/{owner}/{repo}/releases` | Paginação: `?page={n}&per_page=100` até lista vazia |
+
+Cabeçalhos:
+```
+Authorization: Token <GITHUB_TOKEN>
+Accept: application/vnd.github+json
+```
+
+Tratamento de erros:
+- Verificação de `status_code == 200`
+- Interrupção de paginação em resposta vazia
+- Exceções logadas com mensagem de status + texto da resposta
+
 3. Schema GraphQL:
-   - Query: user(id), post(id), users(limit, offset), posts(limit, offset)
-   - Tipos: User, Post, Tag
-   - Campos resolvidos com DataLoader para evitar N+1 (garante justiça comparativa).
+   
 4. Ambiente:
    - Mesmo servidor físico (ou mesmo container host).
-   - Node.js versão única (ex.: 20.x).
-   - Banco: PostgreSQL ou SQLite (SQLite in-memory para reduzir variabilidade, mas Postgres dá realismo; escolha e documente).
-5. Ferramentas de Carga: k6 com scripts específicos por cenário (um por tratamento ou parametrizado).
+   - Python versão 3.12.7.
+   - Banco em memória.
 
 ---
 
@@ -137,28 +146,14 @@ Possíveis extensões:
 
 ---
 
-## H. Ameaças à Validade
+## 11. Ameaças à Validade
 
-### 1. Validade Interna
-- Variação de Carga do Sistema: Outros processos podem interferir. Mitigação: ambiente isolado / container dedicado.
-- Efeito de Ordem / Aquecimento: Primeiro tratamento pode beneficiar de JIT e caches. Mitigação: warmup + randomização da ordem.
-- N+1 em GraphQL: Resolvers mal implementados podem inflar latência injustamente. Mitigação: uso de DataLoader e consultas equivalentes.
-- Caching de Banco Desigual: Após primeira execução, buffers de disco podem favorecer segundo tratamento. Mitigação: alternância e múltiplas replicações.
-
-### 2. Validade de Construção
-- Métrica de Latência: Medir apenas no cliente pode incluir overhead de rede irrelevante. Mitigação: coletar tanto latência cliente quanto servidor.
-- Equivalência Funcional: Consultas podem não retornar exatamente o mesmo conjunto semântico de dados. Mitigação: especificar claramente campos comparados (subset controlado).
-- Tamanho do Payload: Ignorar headers ou compressão pode distorcer comparações reais. Mitigação: documentar decisão (corpo puro sem compressão) e opcional análise com gzip.
-
-### 3. Validade Externa
-- Generalização: Domínio Users/Posts pode não representar padrões de acesso de sistemas mais complexos (ex.: grafos densos, agregações pesadas). Mitigação: explicitar limitações e sugerir replicação em outros domínios.
-- Escala: Níveis de concorrência escolhidos podem não refletir produção. Mitigação: incluir pelo menos um nível moderado e um alto.
-
-### 4. Validade Estatística / Conclusão
-- Pseudorreplicação: Tratar requisições extremamente correlacionadas como independentes. Mitigação: múltiplas replicações temporais e análise da autocorrelação (opcional).
-- Sobreinterpretação de p-valor: Focar apenas em significância e não em efeito prático. Mitigação: relatar effect size e redução percentual.
-- Outliers extremos (picos de GC): Podem distorcer média. Mitigação: relatar mediana e percentis; avaliar remoção justificada de outliers mediante critério transparente (ex.: > Q3 + 3*IQR).
-
-### 5. Outras Ameaças
-- Versão de Node ou Bibliotecas: Pode afetar performance. Mitigação: fixar versões em package.json.
-- Reprodutibilidade: Falta de scripts automatizados pode dificultar validação. Mitigação: incluir script run_all.sh e documentação do ambiente.
+| Tipo | Ameaça | Mitigação |
+|------|--------|-----------|
+| Interna | Falhas na coleta (timeouts, rate limit) | Retry + delays + token |
+| Construção | Interpretação incorreta de métricas CK | Referenciar definição oficial CK; usar documentação |
+| Externa | Repositórios populares não representam todo o ecossistema Java | Explicitar critério de seleção (estrelas > 0 ordenado por popularidade) |
+| Estatística | Correlação espúria por variáveis ocultas (ex.: domínio) | Análise multivariada exploratória, controle parcial por tamanho |
+| Estatística | Outliers extremos afetando coeficientes | Uso de medidas robustas (mediana) |
+| Reprodutibilidade | Dependência de estado do GitHub (popularidade dinâmica) | Registrar data/hora da coleta e commit hash do script |
+| Ética / Licença | Uso de repositórios sem verificação de licenças | Apenas leitura de metadados públicos; citar política de uso da API |
