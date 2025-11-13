@@ -66,8 +66,7 @@ Exemplo de conjunto mínimo de tratamentos (T):
 | T8 | GraphQL | Deep nesting | Médio | 10           | Completo     |
 
 Possíveis extensões:
-- Repetir T1–T8 com variação de concorrência (1,10,50) para analisar sensibilidade.
-- Adicionar cenário com compressão HTTP (gzip) para avaliar impacto relativo na economia de payload (não central para hipóteses principais; pode ser apêndice).
+- Repetir T1–T8 com variação de concorrência (1,3,5) para analisar sensibilidade.
 
 ---
 
@@ -127,22 +126,11 @@ Tratamento de erros:
   - Mesmo número para latência servidor (paralelo) e tamanho de payload (coletado no lado do cliente).
 
 ### Justificativa Estatística
-- Objetivo: Detectar diferença de, por exemplo, 5–10% na latência média.
-- Piloto estimado: Desvio padrão intra-condição ≈ 15–25 ms (exemplo).
-- Fórmula aproximada (teste t pareado) para diferença mínima detectável Δ:
-
-  n ≈ ((Z_{1-α/2} + Z_{1-β}) * σ_d / Δ)²
-
-  Com σ_d = 20 ms, Δ = 5 ms, α = 0.05 (Z=1.96), β = 0.2 (Z=0.84):
-  n ≈ ((2.8 * 20) / 5)² = (56/5)² = 11.2² ≈ 125 pares.
-  
-  Como iremos além (500 pares por tratamento), teremos margem para:
-  - Estimar percentis altos (p95, p99) com menor erro.
-  - Aplicar bootstrap para intervalos de confiança robustos.
+- Objetivo: Detectar diferença de latência média.
+- Piloto estimado: Desvio padrão intra-condição ≈ 15–25 ms.
 
 ### Distribuição Temporal
 - Interleaving (alternância) REST/GraphQL para reduzir deriva térmica (ex.: executar em blocos de 50 requisições alternadas em altos níveis de concorrência).
-- Se usar k6 com duração em vez de número fixo, ajustar para garantir contagem mínima (ex.: 30s resultando em ≥500 requests).
 
 ---
 
