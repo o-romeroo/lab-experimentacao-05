@@ -58,12 +58,12 @@ Exemplo de conjunto mínimo de tratamentos (T):
 |----|-----|---------------|---------|--------------|--------------|
 | T1 | REST | Simples       | Pequeno | 1            | —            |
 | T2 | GraphQL | Simples    | Pequeno | 1            | Subconjunto  |
-| T3 | REST | Relacional    | Médio   | 10           | —            |
-| T4 | GraphQL | Relacional | Médio   | 10           | Completo     |
-| T5 | REST | Over-fetch    | Grande  | 50           | —            |
-| T6 | GraphQL | Over-fetch | Grande  | 50           | Subconjunto  |
-| T7 | REST | Deep nesting  | Médio   | 10           | —            |
-| T8 | GraphQL | Deep nesting | Médio | 10           | Completo     |
+| T3 | REST | Relacional    | Médio   | 3           | —            |
+| T4 | GraphQL | Relacional | Médio   | 3           | Completo     |
+| T5 | REST | Over-fetch    | Grande  | 5           | —            |
+| T6 | GraphQL | Over-fetch | Grande  | 5           | Subconjunto  |
+| T7 | REST | Deep nesting  | Médio   | 3           | —            |
+| T8 | GraphQL | Deep nesting | Médio | 3           | Completo     |
 
 Possíveis extensões:
 - Repetir T1–T8 com variação de concorrência (1,3,5) para analisar sensibilidade.
@@ -73,12 +73,20 @@ Possíveis extensões:
 ## D. Objetos Experimentais
 
 1. Conjunto de Dados:
-   - Estruturas: Users, Posts, Tags (ou Categories).
-   - Users: id, name, email, bio, avatarUrl, createdAt.
-   - Posts: id, title, body, createdAt, userId, tags[].
-   - Tags: id, name.
-   - Dados sintéticos gerados por script `data/seed.js` garantindo distribuição razoável (por exemplo, comprimento de textos variado para aumentar realismo do payload).
-2. Endpoints REST:
+   - Repositório GitHub
+      - id, full_name, owner.login, owner.type, html_url
+      - stargazers_count, forks_count, open_issues_count, watchers_count
+      - language (língua principal reportada pelo GitHub)
+      - size (em KB, do GitHub), topics, license.spdx_id
+      - created_at, updated_at, pushed_at
+   - Métricas CK (saída bruta por repositório)
+      - resultsclass.csv: métricas por classe (inclui CBO, DIT, LCOM, LOC por classe etc.)
+      - resultsmethod.csv: métricas por método
+      - resultsfield.csv: campos/atributos
+      - resultsvariable.csv: variáveis locais
+      - Observação: a lista completa de colunas segue o padrão da ferramenta CK; o foco analítico deste laboratório está em CBO, DIT, LCOM e LOC.
+   
+3. Endpoints REST:
 
 | Objetivo | Método | Endpoint Base | Exemplo / Observações |
 |----------|--------|---------------|-----------------------|
@@ -107,10 +115,10 @@ Tratamento de erros:
 
 ## E. Tipo de Projeto Experimental
 
-- Delineamento Intra-Sujeitos (paired design): Para cada tipo de consulta, medimos ambos os tratamentos (REST vs GraphQL) em condições idênticas.
+- Delineamento Intra-Sujeitos: Para cada tipo de consulta, medimos ambos os tratamentos (REST vs GraphQL) em condições idênticas.
 - Estratégia de Bloqueio:
   - Bloqueio por Tipo de Consulta (cada bloco contém execuções REST e GraphQL para aquela consulta).
-  - Randomização da ordem de execução dentro do bloco (para mitigar efeitos de aquecimento ou degradação temporal).
+  - Randomização da ordem de execução dentro do bloco (para mitigar efeitos de degradação temporal).
 - Replicações:
   - Mínimo de 3 rodadas temporais independentes (rodas o bloco completo em momentos distintos) para reduzir viés acidental.
 - Justificativa: O pareamento reduz variabilidade causada por flutuações sistêmicas (mesmo hardware / momento aproximado).
@@ -122,7 +130,6 @@ Tratamento de erros:
 ### Por Tratamento (Exemplo Base)
 - Warmup: Descartar primeiros 50–100 requests (dependendo da duração) para estabilizar JIT e caches.
 - Amostras úteis: 500 requisições por tratamento por replicação (para cada combinação de API × Tipo Consulta × Dataset × Concorrência).
-  - Se 8 tratamentos e 3 replicações: 8 × 3 × 500 = 12.000 medições primárias (por variável dependente latência cliente).
   - Mesmo número para latência servidor (paralelo) e tamanho de payload (coletado no lado do cliente).
 
 ### Justificativa Estatística
@@ -130,7 +137,7 @@ Tratamento de erros:
 - Piloto estimado: Desvio padrão intra-condição ≈ 15–25 ms.
 
 ### Distribuição Temporal
-- Interleaving (alternância) REST/GraphQL para reduzir deriva térmica (ex.: executar em blocos de 50 requisições alternadas em altos níveis de concorrência).
+- Interleaving (alternância) REST/GraphQL para reduzir degradação temporal (ex.: executar em blocos de 50 requisições alternadas em altos níveis de concorrência).
 
 ---
 
@@ -141,7 +148,6 @@ Tratamento de erros:
 | Interna | Falhas na coleta (timeouts, rate limit) | Retry + delays + token |
 | Construção | Interpretação incorreta de métricas CK | Referenciar definição oficial CK; usar documentação |
 | Externa | Repositórios populares não representam todo o ecossistema Java | Explicitar critério de seleção (estrelas > 0 ordenado por popularidade) |
-| Estatística | Correlação espúria por variáveis ocultas (ex.: domínio) | Análise multivariada exploratória, controle parcial por tamanho |
 | Estatística | Outliers extremos afetando coeficientes | Uso de medidas robustas (mediana) |
-| Reprodutibilidade | Dependência de estado do GitHub (popularidade dinâmica) | Registrar data/hora da coleta e commit hash do script |
+| Reprodutibilidade | Dependência de estado do GitHub (popularidade dinâmica) | Registrar data/hora da coleta do repositório |
 | Ética / Licença | Uso de repositórios sem verificação de licenças | Apenas leitura de metadados públicos; citar política de uso da API |
