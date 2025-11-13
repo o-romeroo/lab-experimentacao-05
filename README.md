@@ -1,5 +1,5 @@
 # lab-experimentacao-05
-## Alunos: João Vitor Romero Sales
+## Alunos: João Vitor Romero Sales e Lucas Randazzo
 
 # 1. Desenho do Experimento
 
