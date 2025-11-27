@@ -103,7 +103,7 @@ Cada tratamento representa uma combinação única dos fatores experimentais:
 
 **REST API:**
 ```
-GET https://api.github. com/search/repositories
+GET https://api.github.com/search/repositories
     ?q=language:Java+stars:>0
     &sort=stars
     &order=desc
