@@ -6,148 +6,252 @@
 ## A. Hipóteses Nula e Alternativa
 
 ### RQ1: Latência (tempo de resposta)
-- H0₁ (Hipótese Nula): Não há diferença estatisticamente significativa entre a latência média (e distribuição) das respostas REST e GraphQL para consultas equivalentes.
-- H1₁ (Hipótese Alternativa): Há diferença estatisticamente significativa entre as latências; espera-se que GraphQL apresente menor latência média em cenários de sobrecarga (over-fetch) típica do REST OU que REST seja superior em cenários onde o resolver GraphQL introduza custo adicional. (A direção será observada; teste bicaudal.)
+- **H0₁ (Hipótese Nula):** Não há diferença estatisticamente significativa entre a latência média das respostas REST e GraphQL para consultas equivalentes.
+  - Formalmente: μ_REST = μ_GraphQL
+- **H1₁ (Hipótese Alternativa):** Há diferença estatisticamente significativa entre as latências; espera-se que GraphQL apresente menor latência média em cenários de múltiplas requisições devido à redução do número de chamadas necessárias. 
+  - Formalmente: μ_REST ≠ μ_GraphQL
 
 ### RQ2: Tamanho do Payload (bytes)
-- H0₂: Não há diferença estatisticamente significativa entre o tamanho médio das respostas REST e GraphQL para consultas equivalentes.
-- H1₂: Há diferença estatisticamente significativa; espera-se que GraphQL produza respostas menores quando o cliente solicita subconjunto de campos, reduzindo over-fetch presente em REST.
+- **H0₂ (Hipótese Nula):** Não há diferença estatisticamente significativa entre o tamanho médio das respostas REST e GraphQL para consultas equivalentes. 
+  - Formalmente: μ_payload_REST = μ_payload_GraphQL
+- **H1₂ (Hipótese Alternativa):** Há diferença estatisticamente significativa; espera-se que GraphQL produza respostas menores quando o cliente solicita subconjunto de campos, reduzindo over-fetch presente em REST.
+  - Formalmente: μ_payload_REST ≠ μ_payload_GraphQL
 
-Nota: Como não garantimos a direção a priori para latência (pode depender da complexidade dos resolvers), usamos testes bicaudais. Para tamanho de payload, há expectativa direcional (GraphQL menor), mas manteremos abordagem bicaudal para neutralidade científica.
+**Nota:** Como não garantimos a direção a priori para latência (pode depender da complexidade dos resolvers e condições de rede), usamos testes bicaudais.  Para tamanho de payload, há expectativa direcional (GraphQL menor), mas mantemos teste bicaudal para rigor científico.
 
 ---
 
 ## B. Variáveis Dependentes
 
-1. Latência Cliente (ms): tempo total percebido entre envio da requisição e recebimento completo da resposta (TTC).
-2. Latência Servidor (ms): tempo interno medido via middleware (timestamp antes e depois do processamento).
-3. Percentis de latência: p50, p90, p95, p99.
-4. Tamanho do Payload (bytes): comprimento do corpo de resposta (antes de compressão).
-5. Eficiência de Seleção (ratio): número de campos retornados / número de campos potencialmente disponíveis (para evidenciar redução de over-fetch no GraphQL).
-6. Throughput (request/seg) sob cenários de carga (apenas para contexto interpretativo, não é variável primária para hipóteses).
+| Variável | Descrição | Unidade | Tipo |
+|----------|-----------|---------|------|
+| `latency_total_s` | Tempo total de todas as requisições | segundos | Contínua |
+| `latency_avg_s` | Latência média por requisição | segundos | Contínua |
+| `latency_min_s` | Menor latência observada | segundos | Contínua |
+| `latency_max_s` | Maior latência observada | segundos | Contínua |
+| `latency_p95_s` | Percentil 95 da latência | segundos | Contínua |
+| `payload_total_bytes` | Tamanho total do payload recebido | bytes | Contínua |
+| `payload_avg_per_request_bytes` | Tamanho médio por requisição | bytes | Contínua |
+| `payload_avg_per_repo_bytes` | Tamanho médio por repositório retornado | bytes | Contínua |
+| `requests_count` | Número de requisições HTTP realizadas | inteiro | Discreta |
 
 ---
 
-## B. Variáveis Independentes
+## C.  Variáveis Independentes
 
-1. Tipo de API (Fator Principal): REST vs GraphQL.
-2. Tipo de Consulta (Cenário):
-   - Simples (entidade única, p.ex. User por ID).
-   - Relacional (User + lista de Posts).
-   - Over-fetch (REST retorna todos os campos; GraphQL solicita subconjunto).
-   - Deep nesting (User → Posts → Tags ou similar).
-3. Tamanho do Dataset:
-   - Pequeno (100 repos)
-   - Médio (300 repos)
-   - Grande (1.000 repos)
-4. Nível de Concorrência:
-   - 1 token (sequencial)
-   - 3 tokens (moderado)
-   - 5 tokens (alto)
-5. Subconjunto de Campos Solicitados (somente para GraphQL): completo vs reduzido (controla magnitude da economia de payload)
+| Variável | Níveis | Descrição |
+|----------|--------|-----------|
+| **Tipo de API (Fator Principal)** | REST, GraphQL | Tecnologia de API sendo avaliada |
+| **Tamanho do Dataset** | 100, 300, 1000 repositórios | Quantidade de repositórios Java populares consultados |
+| **Período do Dia** | Madrugada, Manhã, Tarde, Noite | Momento da execução (para controle de variabilidade de rede) |
+
+### Variáveis Controladas (Constantes)
+- Linguagem de programação dos repositórios: **Java**
+- Critério de ordenação: **Estrelas (decrescente)**
+- Token de autenticação: **Mesmo token GitHub para todas as execuções**
+- Ambiente de execução: **Mesmo hardware e sistema operacional**
+- Delay entre requisições: **1 segundo**
 
 ---
 
-## C. Tratamentos
+## D.  Tratamentos
 
-Cada tratamento é a combinação dos níveis dos fatores relevantes. Para não gerar explosão combinatória, aplicaremos um delineamento fatorial parcial (selecionando combinações representativas):
+Cada tratamento representa uma combinação única dos fatores experimentais:
 
-Exemplo de conjunto mínimo de tratamentos (T):
+| ID | API | Dataset (repos) | Período | Descrição |
+|----|-----|-----------------|---------|-----------|
+| T1 | REST | 100 | Madrugada | Consulta REST pequena - madrugada |
+| T2 | GraphQL | 100 | Madrugada | Consulta GraphQL pequena - madrugada |
+| T3 | REST | 300 | Madrugada | Consulta REST média - madrugada |
+| T4 | GraphQL | 300 | Madrugada | Consulta GraphQL média - madrugada |
+| T5 | REST | 1000 | Madrugada | Consulta REST grande - madrugada |
+| T6 | GraphQL | 1000 | Madrugada | Consulta GraphQL grande - madrugada |
+| T7 | REST | 100 | Manhã | Consulta REST pequena - manhã |
+| T8 | GraphQL | 100 | Manhã | Consulta GraphQL pequena - manhã |
+| T9 | REST | 300 | Manhã | Consulta REST média - manhã |
+| T10 | GraphQL | 300 | Manhã | Consulta GraphQL média - manhã |
+| T11 | REST | 1000 | Manhã | Consulta REST grande - manhã |
+| T12 | GraphQL | 1000 | Manhã | Consulta GraphQL grande - manhã |
+| T13 | REST | 100 | Tarde | Consulta REST pequena - tarde |
+| T14 | GraphQL | 100 | Tarde | Consulta GraphQL pequena - tarde |
+| T15 | REST | 300 | Tarde | Consulta REST média - tarde |
+| T16 | GraphQL | 300 | Tarde | Consulta GraphQL média - tarde |
+| T17 | REST | 1000 | Tarde | Consulta REST grande - tarde |
+| T18 | GraphQL | 1000 | Tarde | Consulta GraphQL grande - tarde |
+| T19 | REST | 100 | Noite | Consulta REST pequena - noite |
+| T20 | GraphQL | 100 | Noite | Consulta GraphQL pequena - noite |
+| T21 | REST | 300 | Noite | Consulta REST média - noite |
+| T22 | GraphQL | 300 | Noite | Consulta GraphQL média - noite |
+| T23 | REST | 1000 | Noite | Consulta REST grande - noite |
+| T24 | GraphQL | 1000 | Noite | Consulta GraphQL grande - noite |
 
-| ID | API | Tipo Consulta | Dataset | Concorrência | Campos (GQL) |
-|----|-----|---------------|---------|--------------|--------------|
-| T1 | REST | Simples       | Pequeno | 1            | —            |
-| T2 | GraphQL | Simples    | Pequeno | 1            | Subconjunto  |
-| T3 | REST | Relacional    | Médio   | 3           | —            |
-| T4 | GraphQL | Relacional | Médio   | 3           | Completo     |
-| T5 | REST | Over-fetch    | Grande  | 5           | —            |
-| T6 | GraphQL | Over-fetch | Grande  | 5           | Subconjunto  |
-| T7 | REST | Deep nesting  | Médio   | 3           | —            |
-| T8 | GraphQL | Deep nesting | Médio | 3           | Completo     |
-
-Possíveis extensões:
-- Repetir T1–T8 com variação de concorrência (1,3,5) para analisar sensibilidade.
+**Total de Tratamentos:** 24 (2 APIs × 3 tamanhos × 4 períodos)
 
 ---
 
-## D. Objetos Experimentais
+## E.  Objetos Experimentais
 
-1. Conjunto de Dados:
-   - Repositório GitHub
-      - id, full_name, owner.login, owner.type, html_url
-      - stargazers_count, forks_count, open_issues_count, watchers_count
-      - language (língua principal reportada pelo GitHub)
-      - size (em KB, do GitHub), topics, license.spdx_id
-      - created_at, updated_at, pushed_at
-   - Métricas CK (saída bruta por repositório)
-      - resultsclass.csv: métricas por classe (inclui CBO, DIT, LCOM, LOC por classe etc.)
-      - resultsmethod.csv: métricas por método
-      - resultsfield.csv: campos/atributos
-      - resultsvariable.csv: variáveis locais
-      - Observação: a lista completa de colunas segue o padrão da ferramenta CK; o foco analítico deste laboratório está em CBO, DIT, LCOM e LOC.
-   
-3. Endpoints REST:
+### 1. Conjunto de Dados
+- **Fonte:** API do GitHub (REST e GraphQL)
+- **Domínio:** Repositórios públicos com linguagem principal Java
+- **Critério de seleção:** Ordenados por número de estrelas (decrescente)
+- **Campos coletados:**
+  - REST: `full_name`, `stargazers_count`, `language`, `html_url`, metadados completos
+  - GraphQL: `nameWithOwner`, `stargazerCount`, `primaryLanguage. name`, `url`
 
-| Objetivo | Método | Endpoint Base | Exemplo / Observações |
-|----------|--------|---------------|-----------------------|
-| Buscar repositórios Java populares | GET | `https://api.github.com/search/repositories` | `q=language:Java+stars:>0&sort=stars&order=desc&per_page=100&page={n}` |
-| Detalhes de repositório | GET | `https://api.github.com/repos/{owner}/{repo}` | Campos usados: `stargazers_count`, `created_at` |
-| Releases (paginação completa) | GET | `https://api.github.com/repos/{owner}/{repo}/releases` | Paginação: `?page={n}&per_page=100` |
+### 2.  Endpoints Utilizados
 
-Cabeçalhos:
+**REST API:**
 ```
-Authorization: Token <GITHUB_TOKEN>
+GET https://api.github. com/search/repositories
+    ?q=language:Java+stars:>0
+    &sort=stars
+    &order=desc
+    &per_page=100
+    &page={n}
+
+Headers: Authorization: Token <GITHUB_TOKEN>
 ```
 
-Tratamento de erros:
-- Verificação de `status_code == 200`
-- Interrupção de paginação em resposta vazia
-- Exceções logadas com mensagem de status + texto da resposta
+**GraphQL API:**
+```graphql
+query ($queryString: String!, $first: Int!, $after: String) {
+  search(type: REPOSITORY, query: $queryString, first: $first, after: $after) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    nodes {
+      ...  on Repository {
+        nameWithOwner
+        stargazerCount
+        primaryLanguage { name }
+        url
+      }
+    }
+  }
+}
+```
 
-3. Schema GraphQL:
-   
-4. Ambiente:
-   - Mesmo servidor físico (ou mesmo container host).
-   - Python versão 3.12.7.
-   - Banco em memória.
-
----
-
-## E. Tipo de Projeto Experimental
-
-- Delineamento Intra-Sujeitos: Para cada tipo de consulta, medimos ambos os tratamentos (REST vs GraphQL) em condições idênticas.
-- Estratégia de Bloqueio:
-  - Bloqueio por Tipo de Consulta (cada bloco contém execuções REST e GraphQL para aquela consulta).
-  - Randomização da ordem de execução dentro do bloco (para mitigar efeitos de degradação temporal).
-- Replicações:
-  - Mínimo de 3 rodadas temporais independentes (rodas o bloco completo em momentos distintos) para reduzir viés acidental.
-- Justificativa: O pareamento reduz variabilidade causada por flutuações sistêmicas (mesmo hardware / momento aproximado).
-
----
-
-## F. Quantidade de Medições
-
-### Por Tratamento (Exemplo Base)
-- Warmup: Descartar primeiros 50–100 requests (dependendo da duração) para estabilizar JIT e caches.
-- Amostras úteis: 500 requisições por tratamento por replicação (para cada combinação de API × Tipo Consulta × Dataset × Concorrência).
-  - Mesmo número para latência servidor (paralelo) e tamanho de payload (coletado no lado do cliente).
-
-### Justificativa Estatística
-- Objetivo: Detectar diferença de latência média.
-- Piloto estimado: Desvio padrão intra-condição ≈ 15–25 ms.
-
-### Distribuição Temporal
-- Interleaving (alternância) REST/GraphQL para reduzir degradação temporal (ex.: executar em blocos de 50 requisições alternadas em altos níveis de concorrência).
+### 3. Ambiente Experimental
+- **Sistema Operacional:** Windows 11
+- **Python:** 3.12.7
+- **Bibliotecas:** requests, pandas, python-dotenv
+- **Conexão:** Internet doméstica/institucional
+- **Hardware:** CPU = RX 6750XT, Memória = 32GB DDR5
 
 ---
 
-## G. Ameaças à Validade
+## F. Tipo de Projeto Experimental
 
-| Tipo | Ameaça | Mitigação |
-|------|--------|-----------|
-| Interna | Falhas na coleta (timeouts, rate limit) | Retry + delays + token |
-| Construção | Interpretação incorreta de métricas CK | Referenciar definição oficial CK; usar documentação |
-| Externa | Repositórios populares não representam todo o ecossistema Java | Explicitar critério de seleção (estrelas > 0 ordenado por popularidade) |
-| Estatística | Outliers extremos afetando coeficientes | Uso de medidas robustas (mediana) |
-| Reprodutibilidade | Dependência de estado do GitHub (popularidade dinâmica) | Registrar data/hora da coleta do repositório |
-| Ética / Licença | Uso de repositórios sem verificação de licenças | Apenas leitura de metadados públicos; citar política de uso da API |
+### Delineamento Experimental
+- **Tipo:** Experimento controlado com delineamento fatorial completo
+- **Design:** 2 × 3 × 4 (API × Tamanho × Período)
+- **Abordagem:** Intra-sujeitos pareado (mesmas consultas para REST e GraphQL)
+
+### Estratégias de Controle
+1. **Bloqueio por Período:** Execuções em 4 momentos distintos do dia para capturar variabilidade temporal
+2. **Randomização:** Ordem de execução REST/GraphQL alternada
+3. **Pareamento:** Cada cenário executado com ambas as APIs sequencialmente
+
+### Justificativa
+O pareamento reduz variabilidade causada por:
+- Flutuações de rede
+- Carga dos servidores GitHub
+- Condições do sistema local
+
+---
+
+## G. Quantidade de Medições
+
+### Resumo das Medições
+
+| Métrica | Por Tratamento | Total (24 tratamentos) |
+|---------|----------------|------------------------|
+| Latência total | 1 | 24 |
+| Latência média | 1 | 24 |
+| Latência p95 | 1 | 24 |
+| Payload total | 1 | 24 |
+| Payload médio/request | 1 | 24 |
+| Requisições HTTP | Variável | ~120 |
+
+### Distribuição por Cenário
+
+| Dataset | Requisições REST | Requisições GraphQL |
+|---------|------------------|---------------------|
+| 100 repos | 1 página | 1 página |
+| 300 repos | 3 páginas | 3 páginas |
+| 1000 repos | 10 páginas | 10 páginas |
+
+### Replicações
+- **4 replicações temporais** (madrugada, manhã, tarde, noite)
+- **Objetivo:** Detectar variabilidade relacionada à carga dos servidores
+
+---
+
+## H.  Ameaças à Validade
+
+### Validade Interna
+| Ameaça | Descrição | Mitigação |
+|--------|-----------|-----------|
+| Rate Limiting | GitHub limita requisições por hora | Uso de token autenticado; delay entre requisições |
+| Timeouts | Falhas de conexão podem distorcer medições | Tratamento de exceções; retry logic |
+| Efeito de ordem | Execução sequencial pode favorecer segunda API | Alternância de ordem em replicações |
+| Caching | Respostas cacheadas podem acelerar segunda execução | Delay entre execuções pareadas |
+
+### Validade de Construção
+| Ameaça | Descrição | Mitigação |
+|--------|-----------|-----------|
+| Medição de latência | `time.perf_counter()` pode incluir overhead | Uso de high-resolution timer; medição consistente |
+| Payload diferente | GraphQL retorna apenas campos solicitados | Documentar diferença semântica |
+
+### Validade Externa
+| Ameaça | Descrição | Mitigação |
+|--------|-----------|-----------|
+| Generalização | Resultados específicos para API do GitHub | Explicitar limitação; sugerir replicação |
+| Tipo de consulta | Apenas busca de repositórios | Reconhecer escopo limitado |
+| Condições de rede | Variabilidade geográfica/temporal | Múltiplas replicações em horários diferentes |
+
+### Validade de Conclusão
+| Ameaça | Descrição | Mitigação |
+|--------|-----------|-----------|
+| Tamanho amostral | Poucas replicações | Testes estatísticos apropriados |
+| Outliers | Valores extremos distorcendo médias | Uso de medianas e percentis |
+
+---
+
+# 2. Preparação do Experimento
+
+## Scripts Desenvolvidos
+- `consuilt_repo.py`: Script principal que executa consultas REST e GraphQL
+
+## Dependências
+```toml
+[project]
+dependencies = [
+    "pandas>=2.2.3",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+    "openpyxl>=3.1.0"
+]
+```
+
+## Configuração
+1.  Criar arquivo `.env` com `GITHUB_TOKEN=<seu_token>`
+2. Instalar dependências: `uv sync` ou `pip install -r requirements.txt`
+3. Executar: `python consuilt_repo.py`
+
+---
+
+# 3. Execução do Experimento
+
+## Rodadas Realizadas
+- **Madrugada:** `comparativo_github_rest_graphql_madrugada.xlsx`
+- **Manhã:** `comparativo_github_rest_graphql_manha.xlsx`
+- **Tarde:** `comparativo_github_rest_graphql_tarde.xlsx`
+- **Noite:** `comparativo_github_rest_graphql_noite.xlsx`
+
+## Cenários Testados
+- 100 repositórios Java (pequeno)
+- 300 repositórios Java (médio)
+- 1000 repositórios Java (grande)
